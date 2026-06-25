@@ -1,0 +1,68 @@
+name: Update Formula
+
+# Keep Formula/kin.rb in lockstep with the latest kin release. Triggered by:
+#   - repository_dispatch (type: kin-release) — immediate, sent by kin's release.yml
+#   - schedule every 6h — self-heal fallback if a dispatch is ever missed
+#   - manual dispatch — break-glass
+on:
+  repository_dispatch:
+    types: [kin-release]
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-formula
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Regenerate formula from the latest kin release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Re-derive the tag from the ACTUAL latest release — never trust the
+          # repository_dispatch payload (a forged dispatch can set any field).
+          tag=$(gh release view --repo firelock-ai/kin --json tagName -q .tagName)
+          ver=${tag#v}
+          echo "Latest kin release: $tag (version $ver)"
+          # Validate plain semver before it reaches the formula or a commit message.
+          [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] \
+            || { echo "::error::unexpected version '$ver' from tag '$tag'"; exit 1; }
+
+          fetch_sha() {
+            curl -fsSL "https://github.com/firelock-ai/kin/releases/download/${tag}/$1.tar.gz.sha256" | awk '{print $1}'
+          }
+          marm=$(fetch_sha kin-macos-aarch64)
+          mintel=$(fetch_sha kin-macos-x86_64)
+          lintel=$(fetch_sha kin-linux-x86_64)
+          larm=$(fetch_sha kin-linux-aarch64)
+          # Each sha must be exactly 64 lowercase hex chars, else refuse to render.
+          for s in "$marm" "$mintel" "$lintel" "$larm"; do
+            [[ "$s" =~ ^[0-9a-f]{64}$ ]] \
+              || { echo "::error::invalid sha256 '$s' for $tag — refusing to render a broken formula"; exit 1; }
+          done
+
+          bash scripts/render-formula.sh "$ver" "$marm" "$mintel" "$lintel" "$larm"
+          ruby -c Formula/kin.rb
+          echo "VER=$ver" >> "$GITHUB_ENV"
+
+      - name: Commit if changed
+        run: |
+          if git diff --quiet -- Formula/kin.rb; then
+            echo "Formula already up to date for v${VER}"
+            exit 0
+          fi
+          git config user.name "kin-ci-bot"
+          git config user.email "ci@firelock.ai"
+          git add Formula/kin.rb
+          git commit -m "chore: bump kin to ${VER}"
+          git push
