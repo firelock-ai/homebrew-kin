@@ -3,20 +3,17 @@ run-name: >-
   ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.schema_version == 1
       && format('Update formula {0} from Kin run {1}', github.event.client_payload.kin_tag, github.event.client_payload.release_workflow_run_id)
       || github.event_name == 'repository_dispatch' && 'Legacy Kin release reconciliation'
-      || github.event_name == 'schedule' && 'Scheduled formula reconciliation'
-      || 'Break-glass formula reconciliation' }}
+      || 'Scheduled formula reconciliation' }}
 
 # Keep Formula/kin.rb in lockstep with the latest kin release. Triggered by:
 #   - repository_dispatch (type: kin-release) — immediate, sent by Kin's
 #     completed-release follow-up callback
 #   - schedule every 6h — self-heal fallback if a dispatch is ever missed
-#   - manual dispatch — break-glass
 on:
   repository_dispatch:
     types: [kin-release]
   schedule:
     - cron: "17 */6 * * *"
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -29,7 +26,20 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Checkout exact current main
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Require exact current main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          [ "$GITHUB_REF" = refs/heads/main ]
+          current="$(gh api repos/firelock-ai/homebrew-kin/git/ref/heads/main --jq .object.sha)"
+          [ "$(git rev-parse HEAD)" = "$current" ]
 
       - name: Regenerate formula from the latest kin release
         env:
@@ -112,6 +122,8 @@ jobs:
           echo "VER=$ver" >> "$GITHUB_ENV"
 
       - name: Commit if changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git diff --quiet -- Formula/kin.rb; then
             echo "Formula already up to date for v${VER}"
@@ -121,4 +133,5 @@ jobs:
           git config user.email "ci@firelock.ai"
           git add Formula/kin.rb
           git commit -m "chore: bump kin to ${VER}"
-          git push
+          gh auth setup-git
+          git push origin HEAD:main
