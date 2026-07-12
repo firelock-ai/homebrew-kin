@@ -1,7 +1,14 @@
 name: Update Formula
+run-name: >-
+  ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.schema_version == 1
+      && format('Update formula {0} from Kin run {1}', github.event.client_payload.kin_tag, github.event.client_payload.release_workflow_run_id)
+      || github.event_name == 'repository_dispatch' && 'Legacy Kin release reconciliation'
+      || github.event_name == 'schedule' && 'Scheduled formula reconciliation'
+      || 'Break-glass formula reconciliation' }}
 
 # Keep Formula/kin.rb in lockstep with the latest kin release. Triggered by:
-#   - repository_dispatch (type: kin-release) — immediate, sent by kin's release.yml
+#   - repository_dispatch (type: kin-release) — immediate, sent by Kin's
+#     completed-release follow-up callback
 #   - schedule every 6h — self-heal fallback if a dispatch is ever missed
 #   - manual dispatch — break-glass
 on:
@@ -22,11 +29,15 @@ jobs:
   update:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Regenerate formula from the latest kin release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISPATCH_SCHEMA_VERSION: ${{ github.event.client_payload.schema_version || '' }}
+          DISPATCH_KIN_TAG: ${{ github.event.client_payload.kin_tag || '' }}
+          DISPATCH_KIN_SHA: ${{ github.event.client_payload.kin_sha || '' }}
+          DISPATCH_RUN_ID: ${{ github.event.client_payload.release_workflow_run_id || '' }}
         run: |
           set -euo pipefail
           # Re-derive the tag from the ACTUAL latest release — never trust the
@@ -34,6 +45,51 @@ jobs:
           tag=$(gh release view --repo firelock-ai/kin --json tagName -q .tagName)
           ver=${tag#v}
           echo "Latest kin release: $tag (version $ver)"
+          if [ "$GITHUB_EVENT_NAME" = repository_dispatch ] && [ -n "$DISPATCH_SCHEMA_VERSION" ]; then
+            [ "$DISPATCH_SCHEMA_VERSION" = 1 ] \
+              || { echo "::error::unsupported Kin dispatch schema '$DISPATCH_SCHEMA_VERSION'"; exit 1; }
+            [[ "$DISPATCH_KIN_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+              || { echo "::error::invalid Kin dispatch tag '$DISPATCH_KIN_TAG'"; exit 1; }
+            [[ "$DISPATCH_KIN_SHA" =~ ^[0-9a-f]{40}$ ]] \
+              || { echo "::error::invalid Kin dispatch SHA"; exit 1; }
+            [[ "$DISPATCH_RUN_ID" =~ ^[0-9]+$ ]] \
+              || { echo "::error::invalid Kin Release run id '$DISPATCH_RUN_ID'"; exit 1; }
+            [ "$DISPATCH_KIN_TAG" = "$tag" ] \
+              || { echo "::error::dispatch tag '$DISPATCH_KIN_TAG' is not GitHub Latest '$tag'"; exit 1; }
+
+            release_run="$(gh api "repos/firelock-ai/kin/actions/runs/${DISPATCH_RUN_ID}")"
+            [ "$(jq -r '.id | tostring' <<< "$release_run")" = "$DISPATCH_RUN_ID" ]
+            [ "$(jq -r .status <<< "$release_run")" = completed ]
+            [ "$(jq -r .conclusion <<< "$release_run")" = success ]
+            [ "$(jq -r .event <<< "$release_run")" = push ]
+            [ "$(jq -r .path <<< "$release_run")" = .github/workflows/release.yml ]
+            [ "$(jq -r .repository.full_name <<< "$release_run")" = firelock-ai/kin ]
+            [ "$(jq -r .head_repository.full_name <<< "$release_run")" = firelock-ai/kin ]
+            [ "$(jq -r .head_branch <<< "$release_run")" = "$DISPATCH_KIN_TAG" ]
+            [ "$(jq -r .head_sha <<< "$release_run")" = "$DISPATCH_KIN_SHA" ]
+
+            tag_ref="$(gh api "repos/firelock-ai/kin/git/ref/tags/${DISPATCH_KIN_TAG}")"
+            object_type="$(jq -r .object.type <<< "$tag_ref")"
+            peeled="$(jq -r .object.sha <<< "$tag_ref")"
+            for _ in 1 2 3 4; do
+              [ "$object_type" = tag ] || break
+              tag_object="$(gh api "repos/firelock-ai/kin/git/tags/${peeled}")"
+              object_type="$(jq -r .object.type <<< "$tag_object")"
+              peeled="$(jq -r .object.sha <<< "$tag_object")"
+            done
+            [ "$object_type" = commit ]
+            [ "$peeled" = "$DISPATCH_KIN_SHA" ]
+
+            release="$(gh api "repos/firelock-ai/kin/releases/tags/${DISPATCH_KIN_TAG}")"
+            [ "$(jq -r .draft <<< "$release")" = false ]
+            [ "$(jq -r .prerelease <<< "$release")" = false ]
+            [ -n "$(jq -r '.published_at // empty' <<< "$release")" ]
+            release_id="$(jq -r '.id | tostring' <<< "$release")"
+            latest_id="$(gh api repos/firelock-ai/kin/releases/latest --jq '.id | tostring')"
+            [ "$release_id" = "$latest_id" ]
+          elif [ "$GITHUB_EVENT_NAME" = repository_dispatch ]; then
+            echo "::warning::legacy kin-release dispatch without correlation payload; reconciling GitHub Latest"
+          fi
           # Validate plain semver before it reaches the formula or a commit message.
           [[ "$ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]] \
             || { echo "::error::unexpected version '$ver' from tag '$tag'"; exit 1; }
