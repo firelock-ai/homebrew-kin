@@ -20,12 +20,16 @@ def main() -> None:
         "repository_dispatch:",
         "types: [kin-release]",
         "schedule:",
-        "workflow_dispatch:",
         "Update formula {0} from Kin run {1}",
         "Legacy Kin release reconciliation",
         "Scheduled formula reconciliation",
-        "Break-glass formula reconciliation",
         "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+        "ref: main",
+        "persist-credentials: false",
+        "Require exact current main",
+        '[ "$GITHUB_REF" = refs/heads/main ]',
+        "repos/firelock-ai/homebrew-kin/git/ref/heads/main",
+        '[ "$(git rev-parse HEAD)" = "$current" ]',
         "DISPATCH_SCHEMA_VERSION: ${{ github.event.client_payload.schema_version || '' }}",
         "DISPATCH_KIN_TAG: ${{ github.event.client_payload.kin_tag || '' }}",
         "DISPATCH_KIN_SHA: ${{ github.event.client_payload.kin_sha || '' }}",
@@ -51,13 +55,19 @@ def main() -> None:
         '[ "$release_id" = "$latest_id" ]',
         "legacy kin-release dispatch without correlation payload",
         "ruby -c Formula/kin.rb",
-        "git push",
+        "gh auth setup-git",
+        "git push origin HEAD:main",
     ):
         require(workflow, policy)
 
     if 'tag="$DISPATCH_KIN_TAG"' in workflow:
         raise AssertionError(
             "the formula must rederive GitHub Latest instead of trusting dispatch data"
+        )
+    if "workflow_dispatch:" in workflow:
+        raise AssertionError(
+            "the mutating Homebrew workflow must not expose branch-selectable "
+            "manual dispatch"
         )
     secret_names = set(re.findall(r"secrets\.([A-Za-z0-9_]+)", workflow))
     if secret_names != {"GITHUB_TOKEN"}:
@@ -68,7 +78,7 @@ def main() -> None:
 
     print(
         "Homebrew formula workflow correlates exact Kin callbacks while retaining "
-        "scheduled, manual, and legacy reconciliation"
+        "scheduled and legacy reconciliation"
     )
 
 
