@@ -63,6 +63,7 @@ def main() -> None:
         "ruby -c Formula/kin.rb",
         "GH_TOKEN: ${{ steps.app-token.outputs.token }}",
         'git config user.name "kin-release-followup[bot]"',
+        'git config user.email "308382930+kin-release-followup[bot]@users.noreply.github.com"',
         "git commit -s",
         "gh auth setup-git",
         "git push origin HEAD:main",
