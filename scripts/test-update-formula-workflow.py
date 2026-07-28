@@ -26,6 +26,12 @@ def main() -> None:
         "actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
         "ref: main",
         "persist-credentials: false",
+        "environment: formula-sync",
+        "Mint repository-scoped formula writer token",
+        "actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1",
+        "owner: firelock-ai",
+        "repositories: homebrew-kin",
+        "permission-contents: write",
         "Require exact current main",
         '[ "$GITHUB_REF" = refs/heads/main ]',
         "repos/firelock-ai/homebrew-kin/git/ref/heads/main",
@@ -55,6 +61,9 @@ def main() -> None:
         '[ "$release_id" = "$latest_id" ]',
         "legacy kin-release dispatch without correlation payload",
         "ruby -c Formula/kin.rb",
+        "GH_TOKEN: ${{ steps.app-token.outputs.token }}",
+        'git config user.name "kin-release-followup[bot]"',
+        "git commit -s",
         "gh auth setup-git",
         "git push origin HEAD:main",
     ):
@@ -70,15 +79,30 @@ def main() -> None:
             "manual dispatch"
         )
     secret_names = set(re.findall(r"secrets\.([A-Za-z0-9_]+)", workflow))
-    if secret_names != {"GITHUB_TOKEN"}:
+    if secret_names != {
+        "KIN_RELEASE_APP_ID",
+        "KIN_RELEASE_APP_PRIVATE_KEY",
+    }:
         raise AssertionError(
-            "update-formula.yml must use only the ephemeral repository token; "
+            "update-formula.yml must use only the formula writer App credentials; "
             f"found {sorted(secret_names)}"
+        )
+    if not re.search(
+        r"permissions:\n {2}contents: read",
+        workflow,
+    ):
+        raise AssertionError(
+            "the default workflow token must remain read-only"
+        )
+    if workflow.count("permission-contents: write") != 1:
+        raise AssertionError(
+            "only the repository-scoped App token may request contents write"
         )
 
     print(
-        "Homebrew formula workflow correlates exact Kin callbacks while retaining "
-        "scheduled and legacy reconciliation"
+        "Homebrew formula workflow correlates exact Kin callbacks, retains "
+        "scheduled reconciliation, and narrows generated writes to the "
+        "formula writer App"
     )
 
 
