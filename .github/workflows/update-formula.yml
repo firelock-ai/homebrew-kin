@@ -67,17 +67,6 @@ jobs:
             [ "$DISPATCH_KIN_TAG" = "$tag" ] \
               || { echo "::error::dispatch tag '$DISPATCH_KIN_TAG' is not GitHub Latest '$tag'"; exit 1; }
 
-            release_run="$(gh api "repos/firelock-ai/kin/actions/runs/${DISPATCH_RUN_ID}")"
-            [ "$(jq -r '.id | tostring' <<< "$release_run")" = "$DISPATCH_RUN_ID" ]
-            [ "$(jq -r .status <<< "$release_run")" = completed ]
-            [ "$(jq -r .conclusion <<< "$release_run")" = success ]
-            [ "$(jq -r .event <<< "$release_run")" = push ]
-            [ "$(jq -r .path <<< "$release_run")" = .github/workflows/release.yml ]
-            [ "$(jq -r .repository.full_name <<< "$release_run")" = firelock-ai/kin ]
-            [ "$(jq -r .head_repository.full_name <<< "$release_run")" = firelock-ai/kin ]
-            [ "$(jq -r .head_branch <<< "$release_run")" = "$DISPATCH_KIN_TAG" ]
-            [ "$(jq -r .head_sha <<< "$release_run")" = "$DISPATCH_KIN_SHA" ]
-
             tag_ref="$(gh api "repos/firelock-ai/kin/git/ref/tags/${DISPATCH_KIN_TAG}")"
             object_type="$(jq -r .object.type <<< "$tag_ref")"
             peeled="$(jq -r .object.sha <<< "$tag_ref")"
@@ -89,6 +78,28 @@ jobs:
             done
             [ "$object_type" = commit ]
             [ "$peeled" = "$DISPATCH_KIN_SHA" ]
+
+            # The correlated release is proven by the SLSA provenance
+            # attestation stored beside the immutable GHCR digest, not by an
+            # Actions run record. A run record ages out of retention and can be
+            # deleted outright, and it never proved which artifact a run
+            # produced, so a dispatch consumed after its run was removed could
+            # never be correlated again. The run id stays on the dispatch as
+            # correlation detail, still shape-validated, but is no longer
+            # resolved live.
+            digest="$(docker buildx imagetools inspect \
+              "ghcr.io/firelock-ai/kin:${DISPATCH_KIN_SHA}" --format '{{.Manifest.Digest}}')"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] \
+              || { echo "::error::no immutable GHCR digest for '$DISPATCH_KIN_TAG'"; exit 1; }
+            gh attestation verify "oci://ghcr.io/firelock-ai/kin@${digest}" \
+              --repo firelock-ai/kin \
+              --bundle-from-oci \
+              --predicate-type https://slsa.dev/provenance/v1 \
+              --signer-workflow firelock-ai/kin/.github/workflows/release.yml \
+              --signer-digest "$DISPATCH_KIN_SHA" \
+              --source-digest "$DISPATCH_KIN_SHA" \
+              --source-ref "refs/tags/${DISPATCH_KIN_TAG}" \
+              --deny-self-hosted-runners
 
             release="$(gh api "repos/firelock-ai/kin/releases/tags/${DISPATCH_KIN_TAG}")"
             [ "$(jq -r .draft <<< "$release")" = false ]
