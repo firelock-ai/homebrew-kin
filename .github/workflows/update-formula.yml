@@ -16,7 +16,7 @@ on:
     - cron: "17 */6 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: update-formula
@@ -25,7 +25,18 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    environment: formula-sync
     steps:
+      - name: Mint repository-scoped formula writer token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v2.2.1
+        with:
+          app-id: ${{ secrets.KIN_RELEASE_APP_ID }}
+          private-key: ${{ secrets.KIN_RELEASE_APP_PRIVATE_KEY }}
+          owner: firelock-ai
+          repositories: homebrew-kin
+          permission-contents: write
+
       - name: Checkout exact current main
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -34,7 +45,7 @@ jobs:
 
       - name: Require exact current main
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           [ "$GITHUB_REF" = refs/heads/main ]
@@ -43,7 +54,7 @@ jobs:
 
       - name: Regenerate formula from the latest kin release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
           DISPATCH_SCHEMA_VERSION: ${{ github.event.client_payload.schema_version || '' }}
           DISPATCH_KIN_TAG: ${{ github.event.client_payload.kin_tag || '' }}
           DISPATCH_KIN_SHA: ${{ github.event.client_payload.kin_sha || '' }}
@@ -134,15 +145,16 @@ jobs:
 
       - name: Commit if changed
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
+          set -euo pipefail
           if git diff --quiet -- Formula/kin.rb; then
             echo "Formula already up to date for v${VER}"
             exit 0
           fi
-          git config user.name "kin-ci-bot"
-          git config user.email "ci@firelock.ai"
+          git config user.name "kin-release-followup[bot]"
+          git config user.email "308382930+kin-release-followup[bot]@users.noreply.github.com"
           git add Formula/kin.rb
-          git commit -m "chore: bump kin to ${VER}"
+          git commit -s -m "chore: bump kin to ${VER}"
           gh auth setup-git
           git push origin HEAD:main

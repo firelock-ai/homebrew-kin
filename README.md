@@ -26,6 +26,10 @@ brew update && brew upgrade kin
 
 `Formula/kin.rb` is a **generated artifact**. `scripts/render-formula.sh` renders it from a kin release, and [`.github/workflows/update-formula.yml`](.github/workflows/update-formula.yml) regenerates it — pulling each `sha256` straight from the published release assets — on every kin release (via `repository_dispatch`) and on a 6-hour self-heal schedule. No human hand-edits a checksum, so the formula can't drift from what's published.
 
+Generated updates mint a short-lived `kin-release-followup` App token scoped only
+to this repository. The normal workflow token stays read-only; the App is the sole
+unattended writer admitted by the protected-main ruleset.
+
 ## License
 
 [Apache-2.0](LICENSE).
