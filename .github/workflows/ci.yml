@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # `policy` is the context the branch ruleset requires, so it has to report on
+  # the merge queue's speculative merge commits as well. Every step is
+  # event-independent and runs unchanged there.
+  merge_group:
 
 permissions:
   contents: read
@@ -21,3 +25,22 @@ jobs:
         run: |
           bash -n scripts/render-formula.sh
           ruby -c Formula/kin.rb
+
+  # Fails when a verification input resolves a specific past Actions run. Run
+  # history is deletable, so a check that reads a run id back breaks permanently
+  # once that run is purged and cannot self-heal, while a tag, a release asset
+  # digest, an image digest, or a signed attestation does not decay that way.
+  # The checker is shared across repos so the rule cannot drift; a repo that
+  # claims an exemption adds its own allowlist and passes it here. This repo
+  # claims none, so the input is omitted.
+  #
+  # Pinned to the kin-actions commit that carries the guard rather than to a
+  # version tag, because the newest tag predates it and resolves to a tree
+  # holding neither the reusable workflow nor its checker. kin-actions-ref
+  # selects the helper checkout, so it has to name the same commit as uses:.
+  run-lookup-guard:
+    uses: firelock-ai/kin-actions/.github/workflows/workflow-run-lookup-guard.yml@fc3421c343b8f9157bdc7daa9c5a2aee75809fd8
+    permissions:
+      contents: read
+    with:
+      kin-actions-ref: fc3421c343b8f9157bdc7daa9c5a2aee75809fd8

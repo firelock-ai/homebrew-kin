@@ -45,12 +45,17 @@ def main() -> None:
         '[[ "$DISPATCH_KIN_SHA" =~ ^[0-9a-f]{40}$ ]]',
         '[[ "$DISPATCH_RUN_ID" =~ ^[0-9]+$ ]]',
         '[ "$DISPATCH_KIN_TAG" = "$tag" ]',
-        'repos/firelock-ai/kin/actions/runs/${DISPATCH_RUN_ID}',
-        '[ "$(jq -r .status <<< "$release_run")" = completed ]',
-        '[ "$(jq -r .conclusion <<< "$release_run")" = success ]',
-        '[ "$(jq -r .path <<< "$release_run")" = .github/workflows/release.yml ]',
-        '[ "$(jq -r .head_branch <<< "$release_run")" = "$DISPATCH_KIN_TAG" ]',
-        '[ "$(jq -r .head_sha <<< "$release_run")" = "$DISPATCH_KIN_SHA" ]',
+        'ghcr.io/firelock-ai/kin:${DISPATCH_KIN_SHA}',
+        '[[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]',
+        'gh attestation verify "oci://ghcr.io/firelock-ai/kin@${digest}"',
+        "--repo firelock-ai/kin",
+        "--bundle-from-oci",
+        "--predicate-type https://slsa.dev/provenance/v1",
+        "--signer-workflow firelock-ai/kin/.github/workflows/release.yml",
+        '--signer-digest "$DISPATCH_KIN_SHA"',
+        '--source-digest "$DISPATCH_KIN_SHA"',
+        '--source-ref "refs/tags/${DISPATCH_KIN_TAG}"',
+        "--deny-self-hosted-runners",
         'repos/firelock-ai/kin/git/ref/tags/${DISPATCH_KIN_TAG}',
         '[ "$object_type" = commit ]',
         '[ "$peeled" = "$DISPATCH_KIN_SHA" ]',
@@ -69,6 +74,27 @@ def main() -> None:
         "git push origin HEAD:main",
     ):
         require(workflow, policy)
+
+    # An Actions run record is not durable evidence: it ages out of retention,
+    # it can be deleted outright, and it never proved which artifact a run
+    # produced. Both the single-run form and the workflow-scoped runs-list form
+    # are refused so neither can come back as a correlation input.
+    for banned in ("actions/runs/", "/runs?"):
+        if banned in workflow:
+            raise AssertionError(
+                "the formula must correlate a release from its signed "
+                f"attestation, not from a workflow run record: {banned}"
+            )
+
+    # The attestation is only meaningful once the tag is proven to peel to the
+    # commit whose image is being verified.
+    if workflow.index('[ "$peeled" = "$DISPATCH_KIN_SHA" ]') > workflow.index(
+        "gh attestation verify"
+    ):
+        raise AssertionError(
+            "the release tag must peel to the dispatched commit before that "
+            "commit's image attestation is verified"
+        )
 
     if 'tag="$DISPATCH_KIN_TAG"' in workflow:
         raise AssertionError(
