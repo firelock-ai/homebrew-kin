@@ -8,28 +8,28 @@
 class Kin < Formula
   desc "Semantic system of record for AI-written software"
   homepage "https://github.com/firelock-ai/kin"
-  version "0.5.33"
+  version "0.5.34"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-macos-aarch64.tar.gz"
-      sha256 "3b930032ea736ec9d55c4febc323fc6e91ce18e7c227299e1aca8b31c5135f41"
+      sha256 "7fe196a767da3067a4bf64d71f6119e10ed0ddc07f0d460a40513bb53ad27cbf"
     end
     on_intel do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-macos-x86_64.tar.gz"
-      sha256 "2cbfa7d7558d5598d2d77113e42a7dad85ec27c489e2924b78ebf7fdb1487cbe"
+      sha256 "f362bf2a5c92b43640be256c58b40508f421e2f24f24d988759b91d49d31c8c9"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-linux-x86_64.tar.gz"
-      sha256 "e91cf70728c211bafb0dc5f1ef74444ccef629f9cab9c38629b565a48eb8a92b"
+      sha256 "79781e6f105397c0c92924afa16f6b7df2a0e7c8a84247df76d8e3a0462660cf"
     end
     on_arm do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-linux-aarch64.tar.gz"
-      sha256 "7b0eeb9a68fa1fdc6b34ac7ef93c320025ac1e0f6809476f1c851d47b9e72fe4"
+      sha256 "ebe0f34a21ed3eb3f1be6e4dbb210d3c5ebd516f226902cb920977df87b8eb48"
     end
   end
 
