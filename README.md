@@ -14,7 +14,24 @@ The formula covers macOS (Apple Silicon + Intel) and Linux (x86_64 + arm64). It 
 - **`kin-daemon`**, the runtime (required by `kin status`, `kin search`, and the MCP server)
 - **`kin-vfs`** + the VFS shim, the transparent filesystem projection
 
-Then run `kin setup` to configure your shell and `kin doctor` to verify the install.
+Then set up the shell and admit a repository. `brew install` leaves you with binaries and
+no graph, so the first useful answer is three more commands:
+
+```sh
+kin setup
+cd /path/to/your/repository
+kin init .
+kin locate "where are webhook retries handled"
+```
+
+`kin setup` writes the shell integration and configures the AI clients it detects. `kin
+init` is the slow step and the one that earns the rest: it admits your Git history into the
+graph, and every answer after it comes from that graph rather than from re-reading the
+tree. Wire an AI agent after `kin init`, not before, so its first tool call has something
+to answer from.
+
+`kin --version` tells you what you actually got, and `kin doctor` reports what is healthy
+and what needs a fix.
 
 ## Upgrade
 
