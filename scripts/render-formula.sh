@@ -28,7 +28,7 @@ cat > "$out" <<RUBY
 # .github/workflows/update-formula.yml, so they can never drift from the
 # published assets.
 class Kin < Formula
-  desc "Semantic system of record for AI-written software"
+  desc "A graph-native code repository for people and AI agents."
   homepage "https://github.com/firelock-ai/kin"
   version "${ver}"
   license "Apache-2.0"

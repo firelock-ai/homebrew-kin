@@ -1,6 +1,6 @@
 # Homebrew Kin
 
-Homebrew tap for [Kin](https://github.com/firelock-ai/kin), the semantic system of record for AI-written software.
+Homebrew tap for [Kin](https://github.com/firelock-ai/kin), a graph-native code repository for people and AI agents.
 
 ## Install
 
