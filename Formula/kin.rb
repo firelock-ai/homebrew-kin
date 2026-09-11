@@ -6,30 +6,30 @@
 # .github/workflows/update-formula.yml, so they can never drift from the
 # published assets.
 class Kin < Formula
-  desc "Semantic system of record for AI-written software"
+  desc "A graph-native code repository for people and AI agents."
   homepage "https://github.com/firelock-ai/kin"
-  version "0.7.11"
+  version "0.7.12"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-macos-aarch64.tar.gz"
-      sha256 "7ee2253876dc73902ef6960ee2a678bf414f720bd98c7bc4c77c1860f4449c0f"
+      sha256 "939ef7dfaea39d813f8e4890a157d43792072a3b4a12b72cf6c072d37301a153"
     end
     on_intel do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-macos-x86_64.tar.gz"
-      sha256 "abf94b51802563534a432dbe145873f7cee962926f2179929cd885b5e8015bd5"
+      sha256 "2ccfb6d5a73196712f2bdc99919be33241066bd95c55c0b7386df53fc4d004c7"
     end
   end
 
   on_linux do
     on_intel do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-linux-x86_64.tar.gz"
-      sha256 "8123c233e8f67f4c1804957fba808616d864505c9b521c50331e0fb5722024e1"
+      sha256 "622338979155dd48de4dfb5920c22889e62b9e98548dbe69425369a6a00ed88c"
     end
     on_arm do
       url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-linux-aarch64.tar.gz"
-      sha256 "dce98724cc6af11d70f464b7a1e0226616ad35c29e1b81edb492d499d04d7ed2"
+      sha256 "1b511e4b5d3111c3f6ed5d3bb004d1d37acd7f045a7d5aaf4acd3eb9816a554f"
     end
   end
 
