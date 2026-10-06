@@ -1,6 +1,6 @@
 # Homebrew Kin
 
-Homebrew tap for [Kin](https://github.com/firelock-ai/kin), a graph-native code repository for people and AI agents.
+Homebrew tap for [Kin](https://github.com/firelock-ai/kin), a graph-native code repository for AI agents and the people who build with them.
 
 ## Install
 
