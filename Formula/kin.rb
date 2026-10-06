@@ -6,7 +6,7 @@
 # .github/workflows/update-formula.yml, so they can never drift from the
 # published assets.
 class Kin < Formula
-  desc "A graph-native code repository for people and AI agents."
+  desc "Graph-native code repository for AI agents and the people who build with them"
   homepage "https://github.com/firelock-ai/kin"
   version "0.8.1"
   license "Apache-2.0"
