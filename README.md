@@ -1,11 +1,11 @@
 # Homebrew Kin
 
-Homebrew tap for [Kin](https://github.com/firelock-ai/kin), a graph-native code repository for AI agents and the people who build with them.
+Homebrew tap for [Kin](https://github.com/kinlab-ai/kin), a graph-native code repository for AI agents and the people who build with them.
 
 ## Install
 
 ```sh
-brew install firelock-ai/kin/kin
+brew install kinlab-ai/kin/kin
 ```
 
 The formula covers macOS (Apple Silicon + Intel) and Linux (x86_64 + arm64). It installs:

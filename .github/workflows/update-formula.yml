@@ -99,10 +99,10 @@ jobs:
             # correlation detail, still shape-validated, but is no longer
             # resolved live.
             digest="$(docker buildx imagetools inspect \
-              "ghcr.io/firelock-ai/kin:${DISPATCH_KIN_SHA}" --format '{{.Manifest.Digest}}')"
+              "ghcr.io/kinlab-ai/kin:${DISPATCH_KIN_SHA}" --format '{{.Manifest.Digest}}')"
             [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] \
               || { echo "::error::no immutable GHCR digest for '$DISPATCH_KIN_TAG'"; exit 1; }
-            gh attestation verify "oci://ghcr.io/firelock-ai/kin@${digest}" \
+            gh attestation verify "oci://ghcr.io/kinlab-ai/kin@${digest}" \
               --repo kinlab-ai/kin \
               --bundle-from-oci \
               --predicate-type https://slsa.dev/provenance/v1 \
