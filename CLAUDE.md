@@ -41,7 +41,7 @@ minutes,** so it can serve the previous commit's bytes with a 200. On 2026-08-26
 bumped to 0.6.0 at 21:53:55Z and a raw/main read minutes later still returned the old version. Pin
 the ref to a sha, or read through the API, before concluding the tap is behind.
 
-**The tap has a phantom `master` branch.** `repos/firelock-ai/homebrew-kin/branches/master` does not
+**The tap has a phantom `master` branch.** `repos/kinlab-ai/homebrew-kin/branches/master` does not
 404; it answers with `main`'s branch object. A check that reads `master` therefore succeeds while
 telling you nothing about the branch that exists.
 

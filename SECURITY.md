@@ -8,7 +8,7 @@ issue for a suspected vulnerability.**
 Use GitHub's private vulnerability reporting on this repository:
 
 1. Go to the **Security** tab of
-   [firelock-ai/homebrew-kin](https://github.com/firelock-ai/homebrew-kin/security).
+   [kinlab-ai/homebrew-kin](https://github.com/kinlab-ai/homebrew-kin/security).
 2. Click **Report a vulnerability** to open a private security advisory.
 3. Include a description, the affected formula or workflow, reproduction
    steps, the impact you observed, and the relevant Kin release and platform.
@@ -30,7 +30,7 @@ are not patched. Security fixes to this tap ship on `main`.
 | Older formula revisions | :x: |
 
 The Kin binaries installed by the formula follow the
-[Kin security policy](https://github.com/firelock-ai/kin/security/policy).
+[Kin security policy](https://github.com/kinlab-ai/kin/security/policy).
 
 ## Scope
 
@@ -40,6 +40,6 @@ Kin releases.
 
 For vulnerabilities in the installed Kin binaries, including the CLI, daemon,
 MCP server, or VFS runtime, report them privately to
-[firelock-ai/kin](https://github.com/firelock-ai/kin/security). If you are not
+[kinlab-ai/kin](https://github.com/kinlab-ai/kin/security). If you are not
 sure which repository owns the issue, report it here and the maintainers will
 route it privately.

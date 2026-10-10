@@ -29,28 +29,28 @@ cat > "$out" <<RUBY
 # published assets.
 class Kin < Formula
   desc "Graph-native code repository for AI agents and the people who build with them"
-  homepage "https://github.com/firelock-ai/kin"
+  homepage "https://github.com/kinlab-ai/kin"
   version "${ver}"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
-      url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-macos-aarch64.tar.gz"
+      url "https://github.com/kinlab-ai/kin/releases/download/v#{version}/kin-macos-aarch64.tar.gz"
       sha256 "${sha_marm}"
     end
     on_intel do
-      url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-macos-x86_64.tar.gz"
+      url "https://github.com/kinlab-ai/kin/releases/download/v#{version}/kin-macos-x86_64.tar.gz"
       sha256 "${sha_mintel}"
     end
   end
 
   on_linux do
     on_intel do
-      url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-linux-x86_64.tar.gz"
+      url "https://github.com/kinlab-ai/kin/releases/download/v#{version}/kin-linux-x86_64.tar.gz"
       sha256 "${sha_lintel}"
     end
     on_arm do
-      url "https://github.com/firelock-ai/kin/releases/download/v#{version}/kin-linux-aarch64.tar.gz"
+      url "https://github.com/kinlab-ai/kin/releases/download/v#{version}/kin-linux-aarch64.tar.gz"
       sha256 "${sha_larm}"
     end
   end
