@@ -39,7 +39,7 @@ jobs:
   # holding neither the reusable workflow nor its checker. kin-actions-ref
   # selects the helper checkout, so it has to name the same commit as uses:.
   run-lookup-guard:
-    uses: firelock-ai/kin-actions/.github/workflows/workflow-run-lookup-guard.yml@fc3421c343b8f9157bdc7daa9c5a2aee75809fd8
+    uses: kinlab-ai/kin-actions/.github/workflows/workflow-run-lookup-guard.yml@fc3421c343b8f9157bdc7daa9c5a2aee75809fd8
     permissions:
       contents: read
     with:
